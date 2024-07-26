@@ -11,7 +11,8 @@ from sympy.matrices import MatrixSymbol, SparseMatrix, Matrix
 
 from sympy.printing.rust import rust_code
 
-x, y, z = symbols('x,y,z')
+x, y, z = symbols('x,y,z', integer=False)
+k, m, n = symbols('k,m,n', integer=True)
 
 
 def test_Integer():
@@ -43,7 +44,10 @@ def test_basic_ops():
     assert rust_code(x * y) == "x*y"
     assert rust_code(x / y) == "x/y"
     assert rust_code(-x) == "-x"
-
+    assert rust_code(2 * x) == "2.0 * x"
+    assert rust_code(y + 2) == "y + 2.0"
+    # TODO: variable type casting
+    # assert rust_code(x + n) == "x + (n as i32)"
 
 def test_printmethod():
     class fabs(Abs):
@@ -105,10 +109,10 @@ def test_constants():
 
 
 def test_constants_other():
-    assert rust_code(2*GoldenRatio) == "const GoldenRatio: f64 = %s;\n2*GoldenRatio" % GoldenRatio.evalf(17)
+    assert rust_code(2*GoldenRatio) == "const GoldenRatio: f64 = %s;\n2.0*GoldenRatio" % GoldenRatio.evalf(17)
     assert rust_code(
-            2*Catalan) == "const Catalan: f64 = %s;\n2*Catalan" % Catalan.evalf(17)
-    assert rust_code(2*EulerGamma) == "const EulerGamma: f64 = %s;\n2*EulerGamma" % EulerGamma.evalf(17)
+            2*Catalan) == "const Catalan: f64 = %s;\n2.0*Catalan" % Catalan.evalf(17)
+    assert rust_code(2*EulerGamma) == "const EulerGamma: f64 = %s;\n2.0*EulerGamma" % EulerGamma.evalf(17)
 
 
 def test_boolean():
@@ -116,13 +120,13 @@ def test_boolean():
     assert rust_code(S.true) == "true"
     assert rust_code(False) == "false"
     assert rust_code(S.false) == "false"
-    assert rust_code(x & y) == "x && y"
-    assert rust_code(x | y) == "x || y"
-    assert rust_code(~x) == "!x"
-    assert rust_code(x & y & z) == "x && y && z"
-    assert rust_code(x | y | z) == "x || y || z"
-    assert rust_code((x & y) | z) == "z || x && y"
-    assert rust_code((x | y) & z) == "z && (x || y)"
+    assert rust_code(k & m) == "k && m"
+    assert rust_code(k | m) == "k || m"
+    assert rust_code(~k) == "!k"
+    assert rust_code(k & m & n) == "k && m && n"
+    assert rust_code(k | m | n) == "k || m || n"
+    assert rust_code((k & m) | n) == "n || k && m"
+    assert rust_code((k | m) & n) == "n && (k || m)"
 
 
 def test_Piecewise():
@@ -197,12 +201,12 @@ def test_reserved_words():
 
 
 def test_ITE():
-    expr = ITE(x < 1, y, z)
-    assert rust_code(expr) == (
-            "if (x < 1) {\n"
-            "    y\n"
+    ekpr = ITE(k < 1, m, n)
+    assert rust_code(ekpr) == (
+            "if (k < 1) {\n"
+            "    m\n"
             "} else {\n"
-            "    z\n"
+            "    n\n"
             "}")
 
 
@@ -325,7 +329,7 @@ def test_inline_function():
 
     g = implemented_function('g', Lambda(x, 2*x/Catalan))
     assert rust_code(g(x)) == (
-        "const Catalan: f64 = %s;\n2*x/Catalan" % Catalan.evalf(17))
+        "const Catalan: f64 = %s;\n2.0*x/Catalan" % Catalan.evalf(17))
 
     A = IndexedBase('A')
     i = Idx('i', symbols('n', integer=True))

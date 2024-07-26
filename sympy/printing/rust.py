@@ -35,6 +35,8 @@ from __future__ import annotations
 from typing import Any
 
 from sympy.core import S, Rational, Float, Lambda
+from sympy.core.add import Add
+from sympy.core.mul import Mul
 from sympy.core.numbers import equal_valued
 from sympy.printing.codeprinter import CodePrinter
 
@@ -334,6 +336,20 @@ class RustCodePrinter(CodePrinter):
                 return self._print(expr.rewrite(target_f))
         else:
             return self._print_not_supported(expr)
+
+    def _print_Mul(self, expr):
+        contains_non_ints = any(arg.is_real and not arg.is_integer for arg in expr.args)
+        if contains_non_ints:
+            expr = Mul(*(Float(arg) if arg.is_integer  and arg.is_number else arg for arg in expr.args))
+
+        return super()._print_Mul(expr)
+
+    def _print_Add(self, expr, order=None):
+        contains_non_ints = any(arg.is_real and not arg.is_integer for arg in expr.args)
+        if contains_non_ints:
+            expr = Add(*(Float(arg) if arg.is_integer  and arg.is_number else arg for arg in expr.args))
+
+        return super()._print_Add(expr, order)
 
     def _print_Pow(self, expr):
         if expr.base.is_integer and not expr.exp.is_integer:
